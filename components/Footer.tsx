@@ -13,12 +13,12 @@ export default function Footer () {
     <div className='mt-4 text-center'>
         {/* student  */}
         <div>
-            <Badge className='text-xl text-black  rounded-xl'>68086220 ฉัตรชัย บุญช่วย</Badge>
+            <Badge className='text-xl text-black  rounded-xl'>68097363 นายสิรภัทร พุทธะสะ</Badge>
         </div>
 
         {/* contact */}
         <div className='mt-4 flex justify-center gap-6 '>
-           <Link href={'https://www.facebook.com/chaichai.boonschuay.7'} target="_blank">
+           <Link href={'https://www.facebook.com/siraphat.putthasa'} target="_blank">
             <Facebook className='text-blue-700'/></Link>
             
             <div className='border-l-1'></div>

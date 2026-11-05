@@ -1,99 +1,96 @@
-'use client'
+"use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { checkLogin } from "@/utils/login";
-import FieldImage from "./png/BG.jpg";
-import BSKball from "./png/basketball.png";
-import FTball from "./png/football.png";
-import Vllball from "./png/vollayball.png";
-import Profile from "./png/me.gif";
+// นำเข้าไฟล์รูปภาพจากโฟลเดอร์ assets/imgs (ปรับ path ตามโครงสร้างโฟลเดอร์โครงการของคุณ)
+import fillImg from "../animation/imgs/fill.jpg";
+import basketballImg from "../animation/imgs/basketball.png";
+import footballImg from "../animation/imgs/football.png";
+import volleyballImg from "../animation/imgs/volleyball.png";
+import studenImg from "../animation/imgs/human.gif";
 
-export default function AnimationPage({
-  feildWidth = 640,
-  feildHeight = 480,
-  ballRadius = 50,
-  ballVelocity = 200,
-}: {
-  feildWidth?: number;
-  feildHeight?: number;
+// กำหนด Interface สำหรับ Props เพื่อรองรับ TypeScript และแก้ Error ts(2339)
+interface AnimationProps {
+  fillWidth?: number;
+  fillHeight?: number;
   ballRadius?: number;
   ballVelocity?: number;
-}) {
-  const router = useRouter();
+  keyEvent?: { key?: string };
+}
 
-  // ตรวจสอบการเข้าสู่ระบบ
-  useEffect(() => {
-    checkLogin(router, '/animation');
-  }, [router]);
-
-  const _fieldWidth = feildWidth;
-  const _fieldHeight = feildHeight;
-  const _ballRadius = ballRadius;
-
-  const _ballDiameter = 2 * _ballRadius;
-  const maxX = _fieldWidth - _ballDiameter - 10;
-  const maxY = _fieldHeight - _ballDiameter - 10;
+const Animation: React.FC<AnimationProps> = ({
+  fillWidth = 640,
+  fillHeight = 480,
+  ballRadius = 50,
+  ballVelocity = 50,
+  keyEvent = {},
+}) => {
+  // คำนวณค่าภายใน
+  const ballDiameter = 2 * ballRadius;
+  const maxX = fillWidth - ballDiameter - 8;
+  const maxY = fillHeight - ballDiameter - 8;
   const xVelocity = Math.round(ballVelocity * Math.sqrt(2));
   const yVelocity = Math.round(ballVelocity * Math.sqrt(2));
-  const frameRate = 25;
-  const frameTime = 1 / frameRate;
+  const frameRate = 25; // FPS
+  const frameTime = 1 / frameRate; // วินาที
 
-  const ballRef = useRef<HTMLDivElement>(null);
-  const timer = useRef<NodeJS.Timeout | null>(null);
-
-  const [ballType, setBallType] = useState("none");
+  // States
   const [running, setRunning] = useState(false);
+  const [rotate, setRotate] = useState(0);
+  const [ballType, setBallType] = useState<string>("none");
+
   const [x, setX] = useState(0);
   const [y, setY] = useState(0);
+
   const [moveLeft, setMoveLeft] = useState(true);
   const [moveDown, setMoveDown] = useState(true);
-  const [rotations, setRotations] = useState(0);
-  const [keyEvent, setKeyEvent] = useState<{ key: string } | null>(null);
 
-  // Keyboard Support
+  // DOM Refs
+  const ballRef = useRef<HTMLDivElement | null>(null);
+  const timer = useRef<NodeJS.Timeout | null>(null);
+
+  // ตรวจสอบ Keyboard Event
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      setKeyEvent({ key: e.key });
-    };
+    if (!keyEvent || !keyEvent.key) return;
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!keyEvent) return;
-    if (keyEvent.key === " ") setRunning((prev) => !prev);
-    else if (keyEvent.key === "0") setBallType("none");
-    else if (keyEvent.key === "1") setBallType("Basketball");
-    else if (keyEvent.key === "2") setBallType("Football");
-    else if (keyEvent.key === "3") setBallType("Volleyball");
-    else if (keyEvent.key === "4") setBallType("Face");
+    if (keyEvent.key === " ") {
+      setRunning((prev) => !prev);
+    } else if (keyEvent.key === "0") {
+      setBallType("none");
+    } else if (keyEvent.key === "1") {
+      setBallType("basketball");
+    } else if (keyEvent.key === "2") {
+      setBallType("football");
+    } else if (keyEvent.key === "3") {
+      setBallType("volleyball");
+    } else if (keyEvent.key === "4") {
+      setBallType("human");
+    }
   }, [keyEvent]);
 
-  // เปลี่ยนรูปบอลตามที่ import เข้ามา
+  // เปลี่ยนรูปพื้นหลังของลูกบอล
   useEffect(() => {
     if (!ballRef.current) return;
+
+    // ฟังก์ชันดึง URL รูปภาพรองรับทั้ง Static Import ของ Next.js และ String Path
+    const getImageSrc = (img: any) => (typeof img === "string" ? img : img?.src || "");
+
     if (ballType === "none") {
       ballRef.current.style.backgroundImage = "";
-    } else if (ballType === "Basketball") {
-      ballRef.current.style.backgroundImage = `url(${BSKball.src})`;
-    } else if (ballType === "Football") {
-      ballRef.current.style.backgroundImage = `url(${FTball.src})`;
-    } else if (ballType === "Volleyball") {
-      ballRef.current.style.backgroundImage = `url(${Vllball.src})`;
-    } else if (ballType === "Face") {
-      ballRef.current.style.backgroundImage = `url(${Profile.src})`;
+    } else if (ballType === "basketball") {
+      ballRef.current.style.backgroundImage = `url(${getImageSrc(basketballImg)})`;
+    } else if (ballType === "football") {
+      ballRef.current.style.backgroundImage = `url(${getImageSrc(footballImg)})`;
+    } else if (ballType === "volleyball") {
+      ballRef.current.style.backgroundImage = `url(${getImageSrc(volleyballImg)})`;
+    } else if (ballType === "human") {
+      ballRef.current.style.backgroundImage = `url(${getImageSrc(studenImg)})`;
     }
   }, [ballType]);
 
+  // จัดการ Loop คำนวณเฟรม
   useEffect(() => {
     if (running) {
-      timer.current = setTimeout(() => {
-        calculateNextFrame();
-      }, frameTime * 1000);
+      timer.current = setTimeout(calculateNextFrame, frameTime * 1000);
     }
     return () => {
       if (timer.current) clearTimeout(timer.current);
@@ -101,122 +98,135 @@ export default function AnimationPage({
   });
 
   const calculateNextFrame = () => {
+    // แกน X
     if (moveLeft) {
-      setX((prevX) => {
-        const nextX = prevX + xVelocity / frameRate;
-        if (nextX >= maxX) {
-          setMoveLeft(false);
-          return maxX;
-        }
-        return nextX;
-      });
-      setRotations((prev) => prev + 20);
+      setX((prevX) => prevX + xVelocity / frameRate);
+
+      if (x >= maxX) {
+        setX((prevX) => prevX - (prevX - maxX));
+        setMoveLeft(false);
+        return;
+      }
+      setRotate((prevRotate) => prevRotate + 10);
     } else {
-      setX((prevX) => {
-        const nextX = prevX - xVelocity / frameRate;
-        if (nextX <= 0) {
-          setMoveLeft(true);
-          return 0;
-        }
-        return nextX;
-      });
-      setRotations((prev) => prev - 20);
+      setX((prevX) => prevX - xVelocity / frameRate);
+
+      if (x <= 0) {
+        setX((prevX) => -prevX);
+        setMoveLeft(true);
+        return;
+      }
+      setRotate((prevRotate) => prevRotate - 10);
     }
 
+    // แกน Y
     if (moveDown) {
-      setY((prevY) => {
-        const nextY = prevY + yVelocity / frameRate;
-        if (nextY >= maxY) {
-          setMoveDown(false);
-          return maxY;
-        }
-        return nextY;
-      });
+      setY((prevY) => prevY + yVelocity / frameRate);
+
+      if (y >= maxY) {
+        setY((prevY) => prevY - (prevY - maxY));
+        setMoveDown(false);
+      }
     } else {
-      setY((prevY) => {
-        const nextY = prevY - yVelocity / frameRate;
-        if (nextY <= 0) {
-          setMoveDown(true);
-          return 0;
-        }
-        return nextY;
-      });
+      setY((prevY) => prevY - yVelocity / frameRate);
+
+      if (y <= 0) {
+        setY((prevY) => -prevY);
+        setMoveDown(true);
+      }
     }
   };
 
+  const bgStyle = typeof fillImg === "string" ? fillImg : (fillImg as any)?.src;
+
   return (
-    <main className="flex flex-col items-center justify-center min-h-[75vh] bg-white text-black font-sans px-4 py-4">
-      {/* Container */}
-      <div className="mx-auto mt-3 flex flex-col items-center w-fit">
-        {/* Field */}
+    <div className="flex flex-col items-center mt-3">
+      {/* ชื่อผู้พัฒนา */}
+
+      {/* พื้นที่หลัก (Fill Area) */}
+      <div
+        className="m-2 border-2 border-black rounded-2xl relative bg-center bg-cover overflow-hidden"
+        style={{
+          width: `${fillWidth}px`,
+          height: `${fillHeight}px`,
+          backgroundImage: bgStyle ? `url(${bgStyle})` : "none",
+        }}
+      >
+        {/* ลูกบอล */}
         <div
-          className="border-2 border-black rounded-lg relative overflow-hidden bg-cover bg-center shadow-md"
+          ref={ballRef}
+          className="border border-black rounded-full absolute bg-cyan-400 bg-center bg-cover transition-transform"
           style={{
-            width: `${_fieldWidth}px`,
-            height: `${_fieldHeight}px`,
-            backgroundImage: `url(${FieldImage.src})`,
+            width: `${ballDiameter}px`,
+            height: `${ballDiameter}px`,
+            top: `${y}px`,
+            left: `${x}px`,
+            transform: `rotate(${rotate}deg)`,
           }}
+        ></div>
+      </div>
+
+      {/* แผงควบคุม (Controls) */}
+      <div
+        className="m-3 flex justify-between items-center"
+        style={{ width: `${fillWidth}px` }}
+      >
+        {/* ปุ่ม Run/Pause */}
+        <button
+          onClick={() => setRunning(!running)}
+          className={`capitalize px-4 py-2 rounded font-medium text-white transition-colors flex items-center gap-1 ${
+            running
+              ? "bg-amber-500 hover:bg-amber-600"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
         >
-          {/* Ball */}
-          <div
-            className="border border-black rounded-full absolute bg-gray-300 bg-cover bg-center shadow"
-            style={{
-              width: `${_ballDiameter}px`,
-              height: `${_ballDiameter}px`,
-              top: `${y}px`,
-              left: `${x}px`,
-              transform: `rotate(${rotations}deg)`,
-            }}
-            ref={ballRef}
-          ></div>
-        </div>
+          {running ? (
+            <>
+              <span>⏸</span> Pause
+            </>
+          ) : (
+            <>
+              <span>▶</span> Run
+            </>
+          )}
+        </button>
 
-        {/* Button Row */}
-        <div className="flex justify-between items-center w-full gap-4 mt-4">
+        {/* ปุ่มเลือกชนิดลูกบอล */}
+        <div className="flex gap-2">
           <button
-            className={`px-4 py-2 rounded-lg font-bold text-white shadow transition-colors cursor-pointer ${
-              running ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
-            }`}
-            onClick={() => setRunning(!running)}
+            onClick={() => setBallType("none")}
+            className="capitalize px-3 py-1.5 border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white rounded transition-colors"
           >
-            {running ? <span>Pause</span> : <span>Run</span>}
+            none
           </button>
-
-          {/* Ball Type Buttons */}
-          <div className="flex justify-end gap-2">
-            <button
-              className="px-3 py-1.5 border border-gray-400 rounded-lg text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-              onClick={() => setBallType("none")}
-            >
-              None
-            </button>
-            <button
-              className="px-3 py-1.5 border border-blue-500 text-blue-600 rounded-lg text-sm hover:bg-blue-50 cursor-pointer"
-              onClick={() => setBallType("Basketball")}
-            >
-              Basketball
-            </button>
-            <button
-              className="px-3 py-1.5 border border-blue-500 text-blue-600 rounded-lg text-sm hover:bg-blue-50 cursor-pointer"
-              onClick={() => setBallType("Football")}
-            >
-              Football
-            </button>
-            <button
-              className="px-3 py-1.5 border border-blue-500 text-blue-600 rounded-lg text-sm hover:bg-blue-50 cursor-pointer"
-              onClick={() => setBallType("Volleyball")}
-            >
-              Volleyball
-            </button>
-            <button
-              className="px-3 py-1.5 border border-blue-500 text-blue-600 rounded-lg text-sm hover:bg-blue-50 cursor-pointer"
-              onClick={() => setBallType("Face")}
-            >
-              Face
-            </button>
-          </div>
+          <button
+            onClick={() => setBallType("basketball")}
+            className="capitalize px-3 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition-colors"
+          >
+            basketball
+          </button>
+          <button
+            onClick={() => setBallType("football")}
+            className="capitalize px-3 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition-colors"
+          >
+            football
+          </button>
+          <button
+            onClick={() => setBallType("volleyball")}
+            className="capitalize px-3 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition-colors"
+          >
+            volleyball
+          </button>
+          <button
+            onClick={() => setBallType("human")}
+            className="capitalize px-3 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition-colors"
+          >
+            Human
+          </button>
         </div>
       </div>
-    </main>
+    </div>
   );
-}
+};
+
+export default Animation;

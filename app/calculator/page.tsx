@@ -1,258 +1,196 @@
-"use client";
+'use client'
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; 
-import { checkLogin } from "@/utils/login";
+import { useCallback, useEffect, useState } from 'react'
+import './calculator.css'
 
-export default function Calculator() {
+type Op = '+' | '-' | '×' | '÷'
 
- const router = useRouter()
-  useEffect(() => checkLogin(router, '/calculator'),[router])
+const calculate = (a: number, b: number, op: Op) => {
+  if (op === '+') return a + b
+  if (op === '-') return a - b
+  if (op === '×') return a * b
+  return b === 0 ? NaN : a / b
+}
 
-  const debug = true;
-  const [state, setState] = useState("first");
-  const [display, setDisplay] = useState("0");
-  const [first, setFirst] = useState(0);
-  const [second, setSecond] = useState(0);
-  const [operator, setOperator] = useState("?");
+const show = (n: number) => {
+  if (!isFinite(n)) return 'Error'
+  return String(parseFloat(n.toPrecision(12)))
+}
 
-  const init = () => {
-    setState("first");
-    setDisplay("0");
-    setFirst(0);
-    setSecond(0);
-    setOperator("?");
-  };
+export default function Page() {
+  const [screen, setScreen] = useState('0')
+  const [first, setFirst] = useState<number | null>(null)
+  const [operator, setOperator] = useState<Op | null>(null)
+  const [newNumber, setNewNumber] = useState(true)
+  const [memory, setMemory] = useState(0)
 
-  const insertSeparator = (str: string | number, separator = ",", groupSize = 3) => {
-    let resultString = "";
-    let counter = 0;
-
-    const parts = String(str).split(".");
-    const numberPart = parts[0];
-    const decimalPart = parts[1];
-
-    for (let i = numberPart.length - 1; i >= 0; i--) {
-      resultString = numberPart[i] + resultString;
-
-      if (i !== 0 && counter % groupSize === groupSize - 1) {
-        resultString = separator + resultString;
+  // ฟังก์ชันช่วยสร้างข้อความ "เลขหน้า เครื่องหมาย เลขหลัง"
+  const getFullExpression = () => {
+    if (first !== null && operator) {
+      if (newNumber) {
+        // เมื่อเพิ่งกดเครื่องหมายไป (ยังไม่ได้พิมพ์เลขหลัง) ให้แสดง: "เลขหน้า เครื่องหมาย"
+        return `${show(first)} ${operator}`
       }
-
-      counter++;
+      // เมื่อกำลังพิมพ์เลขหลัง ให้แสดง: "เลขหน้า เครื่องหมาย เลขหลัง"
+      return `${show(first)} ${operator} ${screen}`
     }
+    return screen
+  }
 
-    if (decimalPart !== undefined) {
-      resultString += "." + decimalPart;
-    }
-
-    return resultString;
-  };
-
-  const render = (newDisplay: string, s: string, f: number, sec: number, op: string) => {
-    if (debug) {
-      console.log(`[${s}]first: ${f}, second: ${sec}, operator: ${op}, display: ${newDisplay}`);
-    }
-  };
-
-  const numberClick = (num: number | string) => {
-    let newDisplay = display;
-    let newState = state;
-
-    switch (state) {
-      case "first":
-        if (display.length < 9) {
-          newDisplay = display === "0" ? String(num) : display + String(num);
-        }
-        break;
-
-      case "operator":
-        newDisplay = String(num);
-        newState = "second";
-        break;
-
-      case "second":
-        if (display.length < 9) {
-          newDisplay = display === "0" ? String(num) : display + String(num);
-        }
-        break;
-    }
-
-    setDisplay(newDisplay);
-    setState(newState);
-    render(newDisplay, newState, first, second, operator);
-  };
-
-  const operatorClick = (op: string) => {
-    let newFirst = first;
-    let newOperator = operator;
-    let newState = state;
-    let newDisplay = display;
-
-    switch (state) {
-      case "first":
-        newFirst = Number(display);
-        newOperator = String(op);
-        newState = "operator";
-        break;
-
-      case "operator":
-        newOperator = String(op);
-        break;
-
-      case "second": {
-        const sec = Number(display);
-        let calculated = first;
-
-        if (operator === "+") {
-          calculated = first + sec;
-        } else if (operator === "-") {
-          calculated = first - sec;
-        }
-
-        newFirst = calculated;
-        newDisplay = String(calculated);
-        newOperator = String(op);
-        newState = "operator";
-        break;
+  const numberClick = useCallback(
+    (n: string) => {
+      if (screen === 'Error' || newNumber) {
+        setScreen(n)
+        setNewNumber(false)
+      } else {
+        setScreen(screen === '0' ? n : screen + n)
       }
+    },
+    [screen, newNumber]
+  )
+
+  const dotClick = useCallback(() => {
+    if (newNumber || screen === 'Error') {
+      setScreen('0.')
+      setNewNumber(false)
+    } else if (!screen.includes('.')) {
+      setScreen(screen + '.')
     }
+  }, [screen, newNumber])
 
-    setFirst(newFirst);
-    setOperator(newOperator);
-    setState(newState);
-    setDisplay(newDisplay);
-    render(newDisplay, newState, newFirst, second, newOperator);
-  };
-
-  const equlClick = () => {
-    let newFirst = first;
-    let newDisplay = display;
-    let newState = state;
-
-    switch (state) {
-      case "first":
-        if (operator !== "?") {
-          let calculated = first;
-          if (operator === "+") {
-            calculated = first + second;
-          } else if (operator === "-") {
-            calculated = first - second;
-          }
-          newFirst = calculated;
-          newDisplay = String(calculated);
-        }
-        break;
-
-      case "operator": {
-        const sec = first;
-        let calculated = first;
-        if (operator === "+") {
-          calculated = first + sec;
-        } else if (operator === "-") {
-          calculated = first - sec;
-        }
-        setSecond(sec);
-        newFirst = calculated;
-        newDisplay = String(calculated);
-        newState = "first";
-        break;
+  const operatorClick = useCallback(
+    (op: Op) => {
+      if (screen === 'Error') return
+      const current = Number(screen)
+      if (first !== null && operator && !newNumber) {
+        const result = calculate(first, current, operator)
+        setFirst(result)
+        setScreen(show(result))
+      } else {
+        setFirst(current)
       }
+      setOperator(op)
+      setNewNumber(true)
+    },
+    [screen, first, operator, newNumber]
+  )
 
-      case "second": {
-        const sec = Number(display);
-        let calculated = first;
-        if (operator === "+") {
-          calculated = first + sec;
-        } else if (operator === "-") {
-          calculated = first - sec;
-        }
-        setSecond(sec);
-        newFirst = calculated;
-        newDisplay = String(calculated);
-        newState = "first";
-        break;
-      }
+  const equalClick = useCallback(() => {
+    if (first === null || !operator) return
+    const result = calculate(first, Number(screen), operator)
+    setScreen(show(result))
+    setFirst(null)
+    setOperator(null)
+    setNewNumber(true)
+  }, [first, operator, screen])
+
+  const ceClick = useCallback(() => {
+    setScreen('0')
+    setFirst(null)
+    setOperator(null)
+    setNewNumber(true)
+  }, [])
+
+  const backspace = useCallback(() => {
+    if (newNumber || screen === 'Error') return
+    setScreen(screen.length > 1 ? screen.slice(0, -1) : '0')
+  }, [screen, newNumber])
+
+  const percentClick = useCallback(() => {
+    const current = Number(screen)
+    if (first !== null && operator) {
+      setScreen(show((first * current) / 100))
+    } else {
+      setScreen(show(current / 100))
     }
+    setNewNumber(true)
+  }, [screen, first, operator])
 
-    setFirst(newFirst);
-    setDisplay(newDisplay);
-    setState(newState);
-    render(newDisplay, newState, newFirst, second, operator);
-  };
+  const unary = (fn: (n: number) => number) => {
+    setScreen(show(fn(Number(screen))))
+    setNewNumber(true)
+  }
 
-  const ceClick = () => {
-    init();
-  };
+  const signClick = () => {
+    if (screen === '0' || screen === 'Error') return
+    setScreen(screen.startsWith('-') ? screen.slice(1) : '-' + screen)
+  }
 
+  // ---------- Keyboard ----------
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        ceClick();
-      } else if (e.key === "Enter") {
-        equlClick();
-      } else if (e.key >= "0" && e.key <= "9") {
-        numberClick(e.key);
-      } else if (e.key === "-") {
-        operatorClick("-");
-      } else if (e.key === "+" || e.key === "=") {
-        operatorClick("+");
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  });
+    const onKeyDown = (e: KeyboardEvent) => {
+      const k = e.key
+      if (/^[0-9]$/.test(k)) numberClick(k)
+      else if (k === '.' || k === ',') dotClick()
+      else if (k === '+') operatorClick('+')
+      else if (k === '-') operatorClick('-')
+      else if (k === '*' || k === 'x' || k === 'X') operatorClick('×')
+      else if (k === '/') {
+        e.preventDefault()
+        operatorClick('÷')
+      } else if (k === 'Enter' || k === '=') {
+        e.preventDefault()
+        equalClick()
+      } else if (k === 'Backspace') backspace()
+      else if (k === 'Escape' || k === 'Delete') ceClick()
+      else if (k === '%') percentClick()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [numberClick, dotClick, operatorClick, equalClick, backspace, ceClick, percentClick])
 
   return (
-    <main className="flex flex-col items-center justify-center my-auto py-2 px-4">
-      {/* Calculator Container */}
-      <div className="w-[340px] border-2 border-gray-300 rounded-2xl p-3 bg-white shadow-xl">
-        {/* Screen */}
-        <div className="border border-gray-300 rounded-xl bg-[#f4fbfe] h-16 text-right px-4 flex items-center justify-end text-3xl font-bold mb-3 shadow-inner">
-          {insertSeparator(display)}
-        </div>
+    <div className="calculator">
+      <div className="outer">
+        <div className="inner">
+          <div id="screen" className="screen">
+            {/* แสดงการคำนวณทั้งหมด (เลขหน้า + เครื่องหมาย + เลขหลัง) */}
+            <div className="expression-display">{getFullExpression()}</div>
+          </div>
 
-        {/* Buttons Grid */}
-        <div className="grid grid-cols-5 gap-2">
-          {/* Row 1 */}
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-semibold text-gray-400 text-lg flex items-center justify-center cursor-not-allowed" disabled>MC</button>
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-semibold text-gray-400 text-lg flex items-center justify-center cursor-not-allowed" disabled>MR</button>
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-semibold text-gray-400 text-lg flex items-center justify-center cursor-not-allowed" disabled>M+</button>
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-semibold text-gray-400 text-lg flex items-center justify-center cursor-not-allowed" disabled>M-</button>
-          <button className="h-14 bg-orange-400 hover:bg-orange-500 text-white border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={ceClick}>C</button>
+          <div className="btn-row">
+            <button className="green" onClick={() => setMemory(0)}>MC</button>
+            <button className="green" onClick={() => { setScreen(show(memory)); setNewNumber(true) }}>MR</button>
+            <button className="green" onClick={() => setMemory(memory + Number(screen))}>M+</button>
+            <button className="green" onClick={() => setMemory(memory - Number(screen))}>M-</button>
+            <button className="orange" onClick={ceClick}>CE</button>
+          </div>
 
-          {/* Row 2 */}
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(7)}>7</button>
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(8)}>8</button>
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(9)}>9</button>
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-bold text-xl text-gray-400 flex items-center justify-center cursor-not-allowed" disabled>&divide;</button>
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-bold text-xl text-gray-400 flex items-center justify-center cursor-not-allowed" disabled>√</button>
+          <div className="btn-row">
+            <button className="purple" onClick={() => numberClick('7')}>7</button>
+            <button className="purple" onClick={() => numberClick('8')}>8</button>
+            <button className="purple" onClick={() => numberClick('9')}>9</button>
+            <button className="green" onClick={() => operatorClick('÷')}>÷</button>
+            <button className="green" onClick={() => unary(Math.sqrt)}>√</button>
+          </div>
 
-          {/* Row 3 */}
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(4)}>4</button>
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(5)}>5</button>
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(6)}>6</button>
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-bold text-xl text-gray-400 flex items-center justify-center cursor-not-allowed" disabled>&times;</button>
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-bold text-xl text-gray-400 flex items-center justify-center cursor-not-allowed" disabled>1/x</button>
+          <div className="btn-row">
+            <button className="purple" onClick={() => numberClick('4')}>4</button>
+            <button className="purple" onClick={() => numberClick('5')}>5</button>
+            <button className="purple" onClick={() => numberClick('6')}>6</button>
+            <button className="green" onClick={() => operatorClick('×')}>×</button>
+            <button className="green" onClick={percentClick}>%</button>
+          </div>
 
-          {/* Row 4 */}
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(1)}>1</button>
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(2)}>2</button>
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => numberClick(3)}>3</button>
-          <button className="h-14 bg-[#a5d6a7] hover:bg-[#81c784] border border-gray-300 rounded-xl font-bold text-xl text-black flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => operatorClick('-')}>-</button>
-          <button className="h-14 bg-[#c8e6c9] border border-gray-300 rounded-xl font-bold text-xl text-gray-400 flex items-center justify-center cursor-not-allowed" disabled>%</button>
+          <div className="btn-row">
+            <button className="purple" onClick={() => numberClick('1')}>1</button>
+            <button className="purple" onClick={() => numberClick('2')}>2</button>
+            <button className="purple" onClick={() => numberClick('3')}>3</button>
+            <button className="green" onClick={() => operatorClick('-')}>−</button>
+            <button className="green" onClick={() => unary((n) => 1 / n)}>1/x</button>
+          </div>
 
-          {/* Row 5 */}
-          <button className="h-14 bg-[#bbdefb] hover:bg-blue-200 border border-gray-300 rounded-xl font-bold text-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer col-span-1" onClick={() => numberClick(0)}>0</button>
-          <button className="h-14 bg-[#e3f2fd] border border-gray-300 rounded-xl font-bold text-xl text-gray-400 flex items-center justify-center cursor-not-allowed" disabled>.</button>
-          <button className="h-14 bg-[#e3f2fd] border border-gray-300 rounded-xl font-bold text-xl text-gray-400 flex items-center justify-center cursor-not-allowed" disabled>+/-</button>
-          <button className="h-14 bg-[#a5d6a7] hover:bg-[#81c784] border border-gray-300 rounded-xl font-bold text-xl text-black flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={() => operatorClick('+')}>+</button>
-          <button className="h-14 bg-[#a5d6a7] hover:bg-[#81c784] border border-gray-300 rounded-xl font-bold text-xl text-black flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" onClick={equlClick}>=</button>
+          <div className="btn-row">
+            <button className="purple" onClick={() => numberClick('0')}>0</button>
+            <button className="purple" onClick={dotClick}>.</button>
+            <button className="purple" onClick={signClick}>+/−</button>
+            <button className="green" onClick={() => operatorClick('+')}>+</button>
+            <button className="green" onClick={equalClick}>=</button>
+          </div>
+
+          <div className="student">นายสิรภัทร พุทธะสะ 68097363</div>
         </div>
       </div>
-    </main>
-  );
+    </div>
+  )
 }

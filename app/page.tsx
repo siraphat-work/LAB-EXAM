@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import Image from "next/image";
-import Profile from "./pnghome/me.gif";
+import Profile from "./pnghome/stdempimg.png";
 import { useRouter } from "next/navigation";
 import { checkLogin } from '@/utils/login'
 
@@ -28,10 +28,10 @@ export default function Home() {
           </div>
           <div className="flex flex-col gap-1.5">
             <h2 className="font-bold text-lg text-gray-950">
-              ฉัตรชัย บุญช่วย 
+              สิรภัทร พุทธะสะ
             </h2>
             <p className="text-sm text-gray-700 font-medium">
-              ID: 68086220
+              ID: 68097363
             </p>
             <p className="text-sm text-gray-700">
               Computer Science Student
